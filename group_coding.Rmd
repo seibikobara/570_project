@@ -1,0 +1,240 @@
+---
+title: "group_project"
+author: "Seibi Kobara"
+date: "3/19/2022"
+output: html_document
+---
+
+```{r message=FALSE}
+library(EpiModel)
+library(tidyverse)
+library(magrittr)
+library(gplots)
+opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE)
+```
+
+```{r}
+# age-contact matrix M
+contact=read.csv("contact_matrix.csv")
+M=contact[,-c(1)]
+names(M)=c("0-5 months","6 months-1.9 yrs", "2-19 yrs","20-39 yrs","40-59 yrs","60+ yrs")
+rownames(M)=c("0-5 months","6 months-1.9 yrs", "2-19 yrs","20-39 yrs","40-59 yrs","60+ yrs")
+```
+
+```{r}
+RSV = function(t,t0,params){
+    with(as.list(c(t0,params)),{
+        # total population
+        num=num.s06 + num.i06 + num.r06 +
+            num.s2 +  num.i2 +  num.r2 + 
+            num.s20 + num.i20 + num.r20+
+            num.s30 + num.i30 + num.r30+
+            num.s40 + num.i40 + num.r40+
+            num.s60 + num.i60 + num.r60
+        
+        # differential equations
+        # age 0-6months
+        dS06= -tau*num.s06/num *(M[1,1]*num.i06 + M[1,2]*num.i2+
+                             M[1,3]*num.i20 + M[1,4]*num.i30+
+                             M[1,5]*num.i40 + M[1,6]*num.i60) -
+            age06*num.s06 - death*num.s06 + mu*num + rho*num.r06
+        dI06= tau*num.s06/num *(M[1,1]*num.i06 + M[1,2]*num.i2+
+                             M[1,3]*num.i20 + M[1,4]*num.i30+
+                             M[1,5]*num.i40 + M[1,6]*num.i60)-
+            age06*num.i06 - death*num.i06 - gamma*num.i06
+        dR06= gamma*num.i06 - age06*num.r06 - death*num.r06 - rho*num.r06
+        
+        # age 6months - 1.9 years
+        dS2= -tau*num.s2/num *(M[2,1]*num.i06 + M[2,2]*num.i2+
+                             M[2,3]*num.i20 + M[2,4]*num.i30+
+                             M[2,5]*num.i40 + M[2,6]*num.i60) -
+            age2*num.s2 - death*num.s2 +rho*num.r2 + age06*num.s06
+        dI2= tau*num.s2/num *(M[2,1]*num.i06 + M[2,2]*num.i2+
+                             M[2,3]*num.i20 + M[2,4]*num.i30+
+                             M[2,5]*num.i40 + M[2,6]*num.i60) -
+            age2*num.i2 - death*num.i2 - gamma*num.i2 + age06*num.i06
+        dR2= gamma*num.i2 - age2*num.r2 - death*num.r2 - rho*num.r2 + age06*num.r06
+        
+        # age 2 years - 19 years
+        dS20= -tau*num.s20/num *(M[3,1]*num.i06 + M[3,2]*num.i2+
+                             M[3,3]*num.i20 + M[3,4]*num.i30+
+                             M[3,5]*num.i40 + M[3,6]*num.i60) -
+            age20*num.s20 - death*num.s20 +rho*num.r20 + age2*num.s2
+        dI20= tau*num.s20/num *(M[3,1]*num.i06 + M[3,2]*num.i2+
+                             M[3,3]*num.i20 + M[3,4]*num.i30+
+                             M[3,5]*num.i40 + M[3,6]*num.i60) -
+            age20*num.i20 - death*num.i20 - gamma*num.i20 + age2*num.i2
+        dR20= gamma*num.i20 - age20*num.r20 - death*num.r20 - rho*num.r20 + age2*num.r2
+        
+        
+        # age 20 years - 39 years
+        dS30= -tau*num.s30/num *(M[4,1]*num.i06 + M[4,2]*num.i2+
+                             M[4,3]*num.i20 + M[4,4]*num.i30+
+                             M[4,5]*num.i40 + M[4,6]*num.i60) -
+            age30*num.s30 - death*num.s30 +rho*num.r30 + age20*num.s20
+        dI30= tau*num.s30/num *(M[4,1]*num.i06 + M[4,2]*num.i2+
+                             M[4,3]*num.i20 + M[4,4]*num.i30+
+                             M[4,5]*num.i40 + M[4,6]*num.i60) -
+            age30*num.i30 - death*num.i30 - gamma*num.i30 + age20*num.i20
+        dR30= gamma*num.i30 - age30*num.r30 - death*num.r30 - rho*num.r30 + age20*num.r20
+          
+         # age 40 years - 59 years
+        dS40= -tau*num.s40/num *(M[5,1]*num.i06 + M[5,2]*num.i2+
+                             M[5,3]*num.i20 + M[5,4]*num.i30+
+                             M[5,5]*num.i40 + M[5,6]*num.i60) -
+            age40*num.s40 - death*num.s40 +rho*num.r40 + age30*num.s30
+        dI40= tau*num.s40/num *(M[5,1]*num.i06 + M[5,2]*num.i2+
+                             M[5,3]*num.i20 + M[5,4]*num.i30+
+                             M[5,5]*num.i40 + M[5,6]*num.i60) -
+            age40*num.i40 - death*num.i40 - gamma*num.i40 + age30*num.i30
+        dR40= gamma*num.i40 - age40*num.r40 - death*num.r40 - rho*num.r40 + age30*num.r30
+        
+        # age 60 years over
+        dS60= -tau*num.s60/num *(M[6,1]*num.i06 + M[6,2]*num.i2+
+                             M[6,3]*num.i20 + M[6,4]*num.i30+
+                             M[6,5]*num.i40 + M[6,6]*num.i60) -
+             death*num.s60 +rho*num.r60 + age40*num.s40
+        dI60= tau*num.s60/num *(M[6,1]*num.i06 + M[6,2]*num.i2+
+                             M[6,3]*num.i20 + M[6,4]*num.i30+
+                             M[6,5]*num.i40 + M[6,6]*num.i60) -
+            death*num.i60 - gamma*num.i60 + age40*num.i40
+        dR60= gamma*num.i60 - death*num.r60 - rho*num.r60 + age40*num.r40
+        
+        # output
+        list(c(
+            # compartment
+            dS06,
+            dI06,
+            dR06,
+            dS2,
+            dI2,
+            dR2,
+            dS20,
+            dI20,
+            dR20,
+            dS30,
+            dI30,
+            dR30,
+            dS40,
+            dI40,
+            dR40,
+            dS60,
+            dI60,
+            dR60,
+            
+            # incidence
+            incidence.06=tau*num.s06/num *(M[1,1]*num.i06 + M[1,2]*num.i2+
+                             M[1,3]*num.i20 + M[1,4]*num.i30+
+                             M[1,5]*num.i40 + M[1,6]*num.i60),
+            incidence.2=tau*num.s2/num *(M[2,1]*num.i06 + M[2,2]*num.i2+
+                             M[2,3]*num.i20 + M[2,4]*num.i30+
+                             M[2,5]*num.i40 + M[2,6]*num.i60),
+            incidence.20=tau*num.s20/num *(M[3,1]*num.i06 + M[3,2]*num.i2+
+                             M[3,3]*num.i20 + M[3,4]*num.i30+
+                             M[3,5]*num.i40 + M[3,6]*num.i60),
+            incidence.30=tau*num.s30/num *(M[4,1]*num.i06 + M[4,2]*num.i2+
+                             M[4,3]*num.i20 + M[4,4]*num.i30+
+                             M[4,5]*num.i40 + M[4,6]*num.i60),
+            incidence.40=tau*num.s40/num *(M[5,1]*num.i06 + M[5,2]*num.i2+
+                             M[5,3]*num.i20 + M[5,4]*num.i30+
+                             M[5,5]*num.i40 + M[5,6]*num.i60),
+            incidence.60=tau*num.s60/num *(M[6,1]*num.i06 + M[6,2]*num.i2+
+                             M[6,3]*num.i20 + M[6,4]*num.i30+
+                             M[6,5]*num.i40 + M[6,6]*num.i60)
+
+            ))
+    })
+}
+```
+
+```{r}
+params=param.dcm(tau=0.1, 
+                 age06=1/(365*0.5),
+                 age2 =1/(365*1.5),
+                 age20=1/(365*18),
+                 age30 =1/(365*20),
+                 age40 =1/(365*20),
+                 death=1/(365*75),
+                 mu=0.001,
+                 gamma=1/14,
+                 rho=1/(3650.5)
+)
+init=init.dcm(num.s06 =10,
+              num.i06 =1,
+              num.r06 =0,
+              num.s2  =10,
+              num.i2  =1,
+              num.r2  =0,
+              num.s20 =50,
+              num.i20 =1,
+              num.r20 =0,
+              num.s30 =100,
+              num.i30 =1,
+              num.r30 =0,
+              num.s40 =100,
+              num.i40 =10,
+              num.r40 =0,
+              num.s60 =200,
+              num.i60 = 10,
+              num.r60 = 0,
+              incidence.06=0,
+              incidence.2 =0,
+              incidence.20=0,
+              incidence.30=0,
+              incidence.40=0,
+              incidence.60=0
+              )
+control=control.dcm(nstep=365*10,new.mod=RSV)
+sim=dcm(params,init,control)
+```
+
+```{r}
+sim=mutate_epi(sim,num= num.s06 + num.i06 + num.r06 +
+                        num.s2 +  num.i2 +  num.r2 + 
+                        num.s20 + num.i20 + num.r20+
+                        num.s30 + num.i30 + num.r30+
+                        num.s40 + num.i40 + num.r40+
+                        num.s60 + num.i60 + num.r60)
+# hospitalization risk
+hosp06=0.01
+hosp2 =0.01
+hosp20=0.01
+hosp30=0.01
+hosp40=0.01
+hosp60=0.01
+
+sim=mutate_epi(sim,
+               hosp_incidence06=incidence.06*hosp06,
+               hosp_incidence2 =incidence.2 *hosp2,
+               hosp_incidence20=incidence.20*hosp20,
+               hosp_incidence30=incidence.30*hosp30,
+               hosp_incidence40=incidence.40*hosp40,
+               hosp_incidence60=incidence.60*hosp60)
+df=data.frame(sim)
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+df %>% ggplot(aes(x=time))+
+    geom_line(aes(y=num.i06,color='infection 0-6m'))+
+    geom_line(aes(y=num.i2,color='infection 6m-2y'))+
+    geom_line(aes(y=num.i20,color='infection 2y-19y'))+
+    geom_line(aes(y=num.i30,color='infection 20y-39y'))+
+    geom_line(aes(y=num.i40,color='infection 40y-59y'))+
+    geom_line(aes(y=num.i60,color='infection 60y+'))
+```
+
+```{r}
+# hospitalization
+df %>% ggplot(aes(x=time))+
+    geom_line(aes(y=hosp_incidence06,color='infection 0-6m'))+
+    geom_line(aes(y=hosp_incidence2,color='infection 6m-2y'))+
+    geom_line(aes(y=hosp_incidence20,color='infection 2y-19y'))+
+    geom_line(aes(y=hosp_incidence30,color='infection 20y-39y'))+
+    geom_line(aes(y=hosp_incidence40,color='infection 40y-59y'))+
+    geom_line(aes(y=hosp_incidence60,color='infection 60y+'))
+```
+

@@ -4,7 +4,6 @@ date: "3/19/2022"
 output: html_document
 ---
 
-
 ```{r}
 # packages
 options(scipen = 999)
@@ -86,7 +85,7 @@ beta.v_ = R0_ *(1-psi_)* gamma_/eiganvalue
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # model
-
+# description
 # compartment
 # v06 : vaccinated 0-6months
 # iv06: infection from vaccinated group
@@ -565,11 +564,11 @@ df_com %>% ggplot(aes(x=time))+
     My_Theme
 #dev.off()
 
-png(filename="hospie0_12_plus_vaccine.png",
-    units = "in",
-    width = 7.5,
-    height= 5,
-    res=300)
+#png(filename="hospie0_12_plus_vaccine.png",
+#    units = "in",
+#    width = 7.5,
+#    height= 5,
+#    res=300)
 
 df_com %>% ggplot(aes(x=time))+
     geom_line(aes(y=hosp_incidence0_12months, color=as.factor(scenario)))+
@@ -577,7 +576,7 @@ df_com %>% ggplot(aes(x=time))+
     ylab("RSV hospitalization incidence")+
     scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine"," 50% coverage+ 80% efficacy"))+
     My_Theme
-dev.off()
+#dev.off()
 
 ```
 

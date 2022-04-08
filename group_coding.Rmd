@@ -11,15 +11,26 @@ library(tidyverse)
 library(magrittr)
 library(gplots)
 library(egg)
-library(plotly)
-install.packages("metR")
-library(metR)
 ```
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Readme
-Run the model function first, then change the vaccine parameters at the result section L425. 
+Primary objective
+  step 1: run functions
+  step 2: results (Rn, epi curve, averted)
+  
+secondary objective
+  step 1: run functions
+  step 2: simulation (takes long)
+  step 3: visualize
+  
+Supplements
+  calculated hospitalization rate for each age category
 
-# Model function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Primary objective
+# step1: Model function
 ```{r}
 estimates=function(omega_,psi_){
    
@@ -494,8 +505,8 @@ My_Theme = ggplot2::theme(
   panel.background = element_rect(fill = "white", colour = "grey50"))
 ```
 
-# Results
-# primary objecthe
+# Results 
+# step 2
 ```{r}
 # prepare dataframe
 df1=estimates(omega_=0,psi_=0) 
@@ -583,7 +594,7 @@ avert_summary(365)
 ```
 
 
-# Incidence cases fro 0 to 5 months: non vaccine vs vaccine
+# Incidence cases fro 0 to 12 months: non vaccine vs vaccine
 ```{r}
 #png(filename="incidence_age_group_plus_vaccine.png",
 #    units = "in",
@@ -604,9 +615,9 @@ df_com %>% ggplot(aes(x=time))+
 ```
 
 
-# secondary objective (contour plot)
+# Secondary objective (contour plot)
+# Step 1: Function for averted
 ```{r}
-# function for averted
 # only interested in hospitalization 0-12 months
 avert_hosp=function(days,hosp_in_scenario){
     # non vaccine
@@ -621,11 +632,11 @@ avert_hosp=function(days,hosp_in_scenario){
 }
 ```
 
-
+# step2: simulation (takes long)
 ```{r}
 # simulation 
-omega=c(seq(0,1,0.2))
-psi=c(seq(0.5,1,0.2))
+omega=c(seq(0,1,0.1))
+psi=c(seq(0.4,1,0.1))
 setting=data.frame(expand.grid(omega,psi))
 
 avert_summary=data.frame()
@@ -637,9 +648,9 @@ for (i in 1:nrow(setting)){
   
   # simulation
   df=estimates(omega_=current_omega,psi=current_psi)
-  hosp_cases= df %>% filter(time==365) %>%
+  hosp_cases= df %>% filter(time==365*3) %>%
     dplyr::select(cum_hosp0_12months)%>% pull()
-  value=avert_hosp(365,hosp_cases)
+  value=avert_hosp(365*3,hosp_cases)
   
   # summary
   avert_summary[i,1]=current_omega
@@ -650,27 +661,22 @@ names(avert_summary) = c("omega","psi","hospital_averted")
 ```
 
 
+# step 3: visualize
 ```{r}
 # contour plot
-fig=plot_ly(
-  x=avert_summary$omega,
-  y=avert_summary$psi,
-  z=matrix(c(avert_summary$hospital_averted),ncol=length(psi),nrow=length(omega),byrow=F),
-  type = "contour")
-fig
-```
-
-
-```{r}
-gg= ggplot(avert_summary,aes(x=omega,y=psi)) +
+ggplot(avert_summary,aes(x=omega,y=psi)) +
   geom_raster(aes(fill=hospital_averted)) + 
-  geom_contour(aes(z=hospital_averted),colour="white",size=1,alpha=0.5,breaks = c(0.1,0.2,0.3))+
- # metR::geom_text_contour(aes(z=hospital_averted),colour="white")+
- # geom_label_contour(aes(z=hospital_averted),labels=c(0.1,0.2,0.3))+
-  geom_text(aes(x=0.4,y=0.8),label="0.1",colour="white")+
-  geom_text(aes(x=0.7,y=0.8),label="0.2",colour="white")+
-  geom_text(aes(x=0.9,y=0.8),label="0.3",colour="white")
-gg
+  scale_fill_gradientn(colours=c("skyblue2","plum2","khaki2"),name="Hospitalization averted")+
+  geom_contour(aes(z=hospital_averted),colour="black",size=1,alpha=0.5,breaks = c(0.1,0.2,0.3,0.4,0.5,0.6,0.7))+
+  geom_text(aes(x=0.15,y=1.03),label="0.1",colour="black")+
+  geom_text(aes(x=0.29,y=1.03),label="0.2",colour="black")+
+  geom_text(aes(x=0.43,y=1.03),label="0.3",colour="black")+
+  geom_text(aes(x=0.56,y=1.03),label="0.4",colour="black")+
+  geom_text(aes(x=0.7,y=1.03),label="0.5",colour="black")+
+  geom_text(aes(x=0.85,y=1.03),label="0.6",colour="black")+
+  geom_text(aes(x=1.0,y=1.03),label="0.7",colour="black") +
+  xlab("Vaccine coverage")+
+  ylab("Vaccine efficacy")
 ```
 
 
@@ -682,81 +688,84 @@ gg
 age=c("1","2","3","4","5","6","7","8","9","10","11","12-17","18-49","50-64","65-")
 hosp_count= c(6757,2801,1364,661,320,200,88,76,34,48,40,149,465,564,1174)
 rate_=c(311,128.4,61.4,29.2,14.1,8.9,3.9,3.4,1.5,2.1,1.7,1.1,0.6,1.7,5.3)
-df=data.frame(age,hosp_count,rate=rate_/100000)
+data=data.frame(age,hosp_count,rate=rate_/100000)
 ```
 
 ```{r}
 # yearly
-df2 = data.frame()
+data2 = data.frame()
 for (i in 1:61){
     if (i <= 11){
-        df2[i,1]= df[i,1]
-        df2[i,2]= df[i,2]
-        df2[i,3]= df[i,3]
+        data2[i,1]= data[i,1]
+        data2[i,2]= data[i,2]
+        data2[i,3]= data[i,3]
         }
     if (i ==12){
         for (j in 12:17){
-            df2[j,1]= j
-            df2[j,2]= df[i,2]/6
-            df2[j,3]= df[i,3]/6
+            data2[j,1]= j
+            data2[j,2]= data[i,2]/6
+            data2[j,3]= data[i,3]/6
         }
     }
     if (i == 13){
         for (j in 18:49){
-            df2[j,1]= j
-            df2[j,2]= df[i,2]/32
-            df2[j,3]= df[i,3]/32
+            data2[j,1]= j
+            data2[j,2]= data[i,2]/32
+            data2[j,3]= data[i,3]/32
         }
     }
     if (i == 14){
         for (j in 50:65){
-            df2[j,1]= j
-            df2[j,2]= df[i,2]/15
-            df2[j,3]= df[i,3]/15
+            data2[j,1]= j
+            data2[j,2]= data[i,2]/15
+            data2[j,3]= data[i,3]/15
         }
     }
     if (i == 15){
         for (j in 65){
-            df2[j,1]= j
-            df2[j,2]= df[i,2]
-            df2[j,3]= df[i,3]
+            data2[j,1]= j
+            data2[j,2]= data[i,2]
+            data2[j,3]= data[i,3]
         }
     }
 }
-names(df2)=c("age","hosp_count","rate")
+names(data2)=c("age","hosp_count","rate")
 
-df2 %<>% mutate(case_count=hosp_count/rate)
+data2 %<>% mutate(case_count=hosp_count/rate)
+```
 
+
+```{r}
 # collapse
-df3 = data.frame()
+data3 = data.frame()
 for (i in 1:7){
     if (i==1) {
-        df3[i,1]= "1-4"
-        df3[i,2]= sum(df2[1:4,2])
-        df3[i,3]= sum(df2[1:4,4])
+        data3[i,1]= "1-4"
+        data3[i,2]= sum(data2[1:4,2])
+        data3[i,3]= sum(data2[1:4,4])
     }
     if (i==2) {
-        df3[i,1]= "5-19"
-        df3[i,2]= sum(df2[5:19,2])
-        df3[i,3]= sum(df2[5:19,4])
+        data3[i,1]= "5-19"
+        data3[i,2]= sum(data2[5:19,2])
+        data3[i,3]= sum(data2[5:19,4])
     }
     if (i==3) {
-        df3[i,1]= "20-39"
-        df3[i,2]= sum(df2[20:39,2])
-        df3[i,3]= sum(df2[20:39,4])
+        data3[i,1]= "20-39"
+        data3[i,2]= sum(data2[20:39,2])
+        data3[i,3]= sum(data2[20:39,4])
     }
     if (i==4) {
-        df3[i,1]= "40-59"
-        df3[i,2]= sum(df2[40:59,2])
-        df3[i,3]= sum(df2[40:59,4])
+        data3[i,1]= "40-59"
+        data3[i,2]= sum(data2[40:59,2])
+        data3[i,3]= sum(data2[40:59,4])
     }
     if (i==5) {
-        df3[i,1]= "60-"
-        df3[i,2]= sum(df2[60:nrow(df2),2])
-        df3[i,3]= sum(df2[60:nrow(df2),4])
+        data3[i,1]= "60-"
+        data3[i,2]= sum(data2[60:nrow(data2),2])
+        data3[i,3]= sum(data2[60:nrow(data2),4])
     }
 }
-names(df3) =c("age","hosp_count","case_count")
+names(data3) =c("age","hosp_count","case_count")
 
-df3 %<>% mutate(rate=hosp_count/case_count)
+data3 %<>% mutate(rate=hosp_count/case_count)
 ```

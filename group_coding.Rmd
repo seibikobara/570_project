@@ -1,6 +1,5 @@
 ---
 title: "group_project"
-date: "3/19/2022"
 output: html_document
 ---
 
@@ -12,6 +11,9 @@ library(tidyverse)
 library(magrittr)
 library(gplots)
 library(egg)
+library(plotly)
+install.packages("metR")
+library(metR)
 ```
 
 # Readme
@@ -75,7 +77,7 @@ birthrate_ = 11/(1000*365)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# beta (coefficient of effective contact)
+# beta (coefficient of effecthe contact)
 
 eiganvalue=5.822557704881415
 # beta for non vaccinated
@@ -88,7 +90,7 @@ beta.v_ = R0_ *(1-psi_)* gamma_/eiganvalue
 # description
 # compartment
 # v06 : vaccinated 0-6months
-# iv06: infection from vaccinated group
+# h06: infection from vaccinated group
 # s06 : susceptible (unvaccinated)
 # i06 : infection from unvaccinated group
 # r06 : recovered from infection
@@ -105,22 +107,22 @@ beta.v_ = R0_ *(1-psi_)* gamma_/eiganvalue
 RSV = function(t,t0,params){
     with(as.list(c(t0,params)),{
         # total population
-        num=v06.num + s06.num + iv06.num + i06.num + r06.num +
-            v1.num  + s1.num +  iv1.num +  i1.num +  r1.num  + 
-                      s5.num +  iv5.num +  i5.num +  r5.num  +
-                      s10.num +  iv10.num +  i10.num +  r10.num  +
-                      s30.num +  iv30.num +  i30.num +  r30.num  +
-                      s40.num +  iv40.num +  i40.num +  r40.num  +
-                      s60.num +  iv60.num +  i60.num +  r60.num
+        num=v06.num + s06.num + h06.num + nh06.num + r06.num +
+            v1.num  + s1.num  +  h1.num +  nh1.num +  r1.num  + 
+                      s5.num  +  h5.num +  nh5.num +  r5.num  +
+                      s10.num +  h10.num +  nh10.num +  r10.num  +
+                      s30.num +  h30.num +  nh30.num +  r30.num  +
+                      s40.num +  h40.num +  nh40.num +  r40.num  +
+                      s60.num +  h60.num +  nh60.num +  r60.num
         
         # each population
-        num06 = v06.num + s06.num + iv06.num + i06.num + r06.num
-        num1  = v1.num  + s1.num +  iv1.num +  i1.num +  r1.num
-        num5  = s5.num +  iv5.num +  i5.num +  r5.num
-        num10 =           s10.num +  iv10.num +  i10.num +  r10.num 
-        num30 =           s30.num +  iv30.num +  i30.num +  r30.num  
-        num40 =           s40.num +  iv40.num +  i40.num +  r40.num
-        num60 =           s60.num +  iv60.num +  i60.num +  r60.num
+        num06 = v06.num + s06.num +  h06.num +  nh06.num +  r06.num
+        num1  = v1.num  + s1.num  +  h1.num  +  nh1.num  +  r1.num
+        num5  =           s5.num  +  h5.num  +  nh5.num  +  r5.num
+        num10 =           s10.num +  h10.num +  nh10.num +  r10.num 
+        num30 =           s30.num +  h30.num +  nh30.num +  r30.num  
+        num40 =           s40.num +  h40.num +  nh40.num +  r40.num
+        num60 =           s60.num +  h60.num +  nh60.num +  r60.num
        
          # define death rate
          death06 = death06_
@@ -131,180 +133,209 @@ RSV = function(t,t0,params){
          death40 = death40_
          death60 = death60_
          
-         # birth rate
+         # hospitalization risk
+         # potential mechanism is vaccine reduce the rate of hospitalization. Although vaccine               effect ends at 1 year old, the hospitalization rate among those who are older than                1 year is smaller than younger. This expects that vaccine prevent a the overall                   hospitalization rate/hospitalization averted.
+         # hosp 0 -12 months,1-4 years were derived from Shi2019, and 5-60+years were from                   Goldstein2018 (see supplemental, the bottom of this file)
+        
+         hosp06  = 26.3/1000 
+         hosp1  =  11.3/1000
+         hosp5  =  1.4/1000
+         hosp06v = hosp06*(1-psi_)
+         hosp1v =  hosp1*(1-psi_)
+
+         hosp10  = 0.0000039021228
+         hosp30  = 0.0000001875000
+         hosp40  = 0.0000004710238
+         hosp60  = 0.0000072433980
+        
+        # birth rate
          mu=birthrate_
         
         # differential equations
         # age 0-5months
-        force_inf_v06 =      beta.v/num *(M[1,1]*(i06.num + iv06.num) + 
-                                          M[1,2]*(i1.num  + iv1.num)  +  
-                                          M[1,3]*(i5.num  + iv5.num) + 
-                                          M[1,4]*(i10.num + iv10.num)+
-                                          M[1,5]*(i30.num + iv30.num)+
-                                          M[1,6]*(i40.num + iv40.num)+
-                                          M[1,7]*(i60.num + iv60.num))
-        force_inf_06  =      beta  /num *(M[1,1]*(i06.num + iv06.num) + 
-                                          M[1,2]*(i1.num  + iv1.num)  +  
-                                          M[1,3]*(i5.num  + iv5.num) + 
-                                          M[1,4]*(i10.num + iv10.num)+
-                                          M[1,5]*(i30.num + iv30.num)+
-                                          M[1,6]*(i40.num + iv40.num)+
-                                          M[1,7]*(i60.num + iv60.num))
+        force_inf_v06 =      beta.v/num *(M[1,1]*(nh06.num) + 
+                                          M[1,2]*(nh1.num)  +  
+                                          M[1,3]*(nh5.num) + 
+                                          M[1,4]*(nh10.num)+
+                                          M[1,5]*(nh30.num)+
+                                          M[1,6]*(nh40.num)+
+                                          M[1,7]*(nh60.num))
+        force_inf_06  =      beta  /num *(M[1,1]*(nh06.num) + 
+                                          M[1,2]*(nh1.num)  +  
+                                          M[1,3]*(nh5.num) + 
+                                          M[1,4]*(nh10.num)+
+                                          M[1,5]*(nh30.num)+
+                                          M[1,6]*(nh40.num)+
+                                          M[1,7]*(nh60.num))
         
         dV06  = num*mu*omega - force_inf_v06*v06.num - age06*v06.num - death06*v06.num
-        dIv06 = force_inf_v06*v06.num -gamma*iv06.num - age06*iv06.num - death06*iv06.num
-        dS06  = num*mu*(1-omega) - force_inf_06*s06.num - age06*s06.num - death06*s06.num + rho*r06.num
-        dI06  = force_inf_06*s06.num -gamma*i06.num - age06*i06.num - death06*i06.num
-        dR06  = gamma*iv06.num + gamma*i06.num - rho*r06.num - age06*r06.num - death06*r06.num
+        dS06  = num*mu*(1-omega) - force_inf_06*s06.num - age06*s06.num - 
+          death06*s06.num + rho*r06.num
+        dH06  =  force_inf_v06*v06.num*hosp06v + force_inf_06*s06.num*hosp06 - age06*h06.num -
+          death06*h06.num -gamma*h06.num
+        dNH06 = force_inf_v06*v06.num*(1-hosp06v) + force_inf_06*s06.num*(1-hosp06) -
+           age06*nh06.num - death06*nh06.num - gamma*nh06.num
+        dR06  = gamma*h06.num + gamma*nh06.num - age06*r06.num - death06*r06.num - rho*r06.num  
         
         # age 6-12 months
-        force_inf_v1 =      beta.v/num * (M[2,1]*(i06.num + iv06.num) + 
-                                          M[2,2]*(i1.num  + iv1.num)  +  
-                                          M[2,3]*(i5.num  + iv5.num) + 
-                                          M[2,4]*(i10.num + iv10.num)+
-                                          M[2,5]*(i30.num + iv30.num)+
-                                          M[2,6]*(i40.num + iv40.num)+
-                                          M[2,7]*(i60.num + iv60.num))
-        force_inf_1  =      beta  /num  *(M[2,1]*(i06.num + iv06.num) + 
-                                          M[2,2]*(i1.num  + iv1.num)  +  
-                                          M[2,3]*(i5.num  + iv5.num) + 
-                                          M[2,4]*(i10.num + iv10.num)+
-                                          M[2,5]*(i30.num + iv30.num)+
-                                          M[2,6]*(i40.num + iv40.num)+
-                                          M[2,7]*(i60.num + iv60.num))
+        force_inf_v1 =      beta.v/num * (M[2,1]*(nh06.num) + 
+                                          M[2,2]*(nh1.num)  +  
+                                          M[2,3]*(nh5.num) + 
+                                          M[2,4]*(nh10.num)+
+                                          M[2,5]*(nh30.num)+
+                                          M[2,6]*(nh40.num)+
+                                          M[2,7]*(nh60.num))
+        force_inf_1  =      beta  /num  *(M[2,1]*(nh06.num) + 
+                                          M[2,2]*(nh1.num)  +  
+                                          M[2,3]*(nh5.num) + 
+                                          M[2,4]*(nh10.num)+
+                                          M[2,5]*(nh30.num)+
+                                          M[2,6]*(nh40.num)+
+                                          M[2,7]*(nh60.num))
         
         dV1  = age06*v06.num - force_inf_v1*v1.num - age1*v1.num - death1*v1.num
-        dIv1 = force_inf_v1*v1.num + age06*iv06.num -gamma*iv1.num - age1*iv1.num - death1*iv1.num
-        dS1  = age06*s06.num + rho*r1.num - force_inf_1*s1.num - age1*s1.num - death1*s1.num 
-        dI1  = force_inf_1*s1.num + age06*i06.num -gamma*i1.num - age1*i1.num - death1*i1.num
-        dR1  = gamma*iv1.num + gamma*i1.num + age06*r06.num - rho*r1.num - age1*r1.num - death1*r1.num
+        dS1  = age06*s06.num - force_inf_1*s1.num - age1*s1.num - 
+          death1*s1.num + rho*r1.num
+        dH1  = age06*h06.num + force_inf_v1*v1.num*hosp1v + force_inf_1*s1.num*hosp1 - 
+          age1*h1.num -death1*h1.num -gamma*h1.num
+        dNH1 = age06*nh06.num + force_inf_v1*v1.num*(1-hosp1v) + force_inf_1*s1.num*(1-hosp1) -
+           age1*nh1.num - death1*nh1.num - gamma*nh1.num
+        dR1  = age06*r06.num + gamma*h1.num + gamma*nh1.num - age1*r1.num - death1*r1.num - rho*r1.num 
         
         # age 1-4 years
-        force_inf_5  =      beta  /num  *(M[3,1]*(i06.num + iv06.num) + 
-                                          M[3,2]*(i1.num  + iv1.num)  +  
-                                          M[3,3]*(i5.num  + iv5.num) + 
-                                          M[3,4]*(i10.num + iv10.num)+
-                                          M[3,5]*(i30.num + iv30.num)+
-                                          M[3,6]*(i40.num + iv40.num)+
-                                          M[3,7]*(i60.num + iv60.num))
+        force_inf_5  =      beta  /num  *(M[3,1]*(nh06.num)+ 
+                                          M[3,2]*(nh1.num)+  
+                                          M[3,3]*(nh5.num) + 
+                                          M[3,4]*(nh10.num)+
+                                          M[3,5]*(nh30.num)+
+                                          M[3,6]*(nh40.num)+
+                                          M[3,7]*(nh60.num))
         
-        dIv5 = age1*iv1.num -gamma*iv5.num - age5*iv5.num - death5*iv5.num
-        dS5  = age1*v1.num + age1*s1.num + rho*r5.num - force_inf_5*s5.num - age5*s5.num - death5*s5.num 
-        dI5  = force_inf_5*s5.num + age1*i1.num -gamma*i5.num - age5*i5.num - death5*i5.num
-        dR5  = gamma*iv5.num + gamma*i5.num+ age1*r1.num - rho*r1.num - age5*r5.num - death5*r5.num
+        dS5  = age1*v1.num + age1*s1.num + rho*r5.num - force_inf_5*s5.num - age5*s5.num - 
+          death5*s5.num 
+        dH5  = age1*h1.num + force_inf_5*s5.num*hosp5 - age5*h5.num - death5*h5.num -gamma*h5.num
+        dNH5 = age1*nh1.num + force_inf_5*s5.num*(1-hosp5) - age5*nh5.num - 
+          death5*nh5.num - gamma*nh5.num
+        dR5  = age1*r1.num + gamma*h5.num + gamma*nh5.num - age5*r5.num - 
+          death5*r5.num - rho*r5.num
         
         # age 5-19 years
-        force_inf_10  =      beta  /num *(M[4,1]*(i06.num + iv06.num) + 
-                                          M[4,2]*(i1.num  + iv1.num)  +  
-                                          M[4,3]*(i5.num  + iv5.num) + 
-                                          M[4,4]*(i10.num + iv10.num)+
-                                          M[4,5]*(i30.num + iv30.num)+
-                                          M[4,6]*(i40.num + iv40.num)+
-                                          M[4,7]*(i60.num + iv60.num))
+        force_inf_10  =      beta  /num *(M[4,1]*(nh06.num) + 
+                                          M[4,2]*(nh1.num)  +  
+                                          M[4,3]*(nh5.num) + 
+                                          M[4,4]*(nh10.num)+
+                                          M[4,5]*(nh30.num)+
+                                          M[4,6]*(nh40.num)+
+                                          M[4,7]*(nh60.num))
         
-        dIv10 = age5*iv5.num -gamma*iv10.num - age10*iv10.num - death10*iv10.num
-        dS10  = age5*s5.num + rho*r10.num - force_inf_10*s10.num - age10*s10.num - death10*s10.num 
-        dI10  = force_inf_10*s10.num + age5*i5.num -gamma*i10.num - age10*i10.num - death10*i10.num
-        dR10  = gamma*iv10.num + gamma*i10.num + age5*r5.num - rho*r10.num - age10*r10.num - death10*r10.num
+        dS10  = age5*s5.num + rho*r10.num - force_inf_10*s10.num - 
+          age10*s10.num - death10*s10.num 
+        dH10  = age5*h5.num + force_inf_10*s10.num*hosp10 - 
+          age10*h10.num - death10*h10.num -gamma*h10.num
+        dNH10 = age5*nh5.num + force_inf_10*s10.num*(1-hosp10) - 
+          age10*nh10.num - death10*nh10.num - gamma*nh10.num
+        dR10  = age5*r5.num + gamma*h10.num + gamma*nh10.num - 
+          age10*r10.num - death10*r10.num - rho*r10.num
         
         # age 20-39 years
-        force_inf_30  =      beta  /num *(M[5,1]*(i06.num + iv06.num) + 
-                                          M[5,2]*(i1.num  + iv1.num)  +  
-                                          M[5,3]*(i5.num  + iv5.num) + 
-                                          M[5,4]*(i10.num + iv10.num)+
-                                          M[5,5]*(i30.num + iv30.num)+
-                                          M[5,6]*(i40.num + iv40.num)+
-                                          M[5,7]*(i60.num + iv60.num))
+        force_inf_30  =      beta  /num *(M[5,1]*(nh06.num) + 
+                                          M[5,2]*(nh1.num)  +  
+                                          M[5,3]*(nh5.num) + 
+                                          M[5,4]*(nh10.num)+
+                                          M[5,5]*(nh30.num)+
+                                          M[5,6]*(nh40.num)+
+                                          M[5,7]*(nh60.num))
         
-        dIv30 = age10*iv10.num -gamma*iv30.num - age30*iv30.num - death30*iv30.num
-        dS30  = age10*s10.num + rho*r30.num - force_inf_30*s30.num - age30*s30.num - death30*s30.num 
-        dI30  = force_inf_30*s30.num + age10*i10.num -gamma*i30.num - age30*i30.num - death30*i30.num
-        dR30  = gamma*iv30.num + gamma*i30.num + age10*r10.num - rho*r30.num - age30*r30.num - death30*r30.num
+        dS30  = age10*s10.num + rho*r30.num - force_inf_30*s30.num - 
+          age30*s30.num - death30*s30.num 
+        dH30  = age10*h10.num + force_inf_30*s30.num*hosp30 - 
+          age30*h30.num - death30*h30.num -gamma*h30.num
+        dNH30 = age10*nh10.num + force_inf_30*s30.num*(1-hosp30) - 
+          age30*nh30.num - death30*nh30.num - gamma*nh30.num
+        dR30  = age10*r10.num + gamma*h30.num + gamma*nh30.num - 
+          age30*r30.num - death30*r30.num - rho*r30.num
+        
         
         # age 40-59 years
-        force_inf_40  =      beta  /num *(M[6,1]*(i06.num + iv06.num) + 
-                                          M[6,2]*(i1.num  + iv1.num)  +  
-                                          M[6,3]*(i5.num  + iv5.num) + 
-                                          M[6,4]*(i10.num + iv10.num)+
-                                          M[6,5]*(i30.num + iv30.num)+
-                                          M[6,6]*(i40.num + iv40.num)+
-                                          M[6,7]*(i60.num + iv60.num))
+        force_inf_40  =      beta  /num *(M[6,1]*(nh06.num) + 
+                                          M[6,2]*(nh1.num)  +  
+                                          M[6,3]*(nh5.num) + 
+                                          M[6,4]*(nh10.num)+
+                                          M[6,5]*(nh30.num)+
+                                          M[6,6]*(nh40.num)+
+                                          M[6,7]*(nh60.num))
         
-        dIv40 = age30*iv30.num -gamma*iv40.num - age40*iv40.num - death40*iv40.num
-        dS40  = age30*s30.num + rho*r40.num - force_inf_40*s40.num - age40*s40.num - death40*s40.num 
-        dI40  = force_inf_40*s40.num + age30*i30.num -gamma*i40.num - age40*i40.num - death40*i40.num
-        dR40  = gamma*iv40.num + gamma*i40.num + age30*r30.num- rho*r40.num - age40*r40.num - death40*r40.num
+        dS40  = age30*s30.num + rho*r40.num - force_inf_40*s40.num - 
+          age40*s40.num - death40*s40.num 
+        dH40  = age30*h30.num + force_inf_40*s40.num*hosp40 - 
+          age40*h40.num - death40*h40.num -gamma*h40.num
+        dNH40 = age30*nh30.num + force_inf_40*s40.num*(1-hosp40) - 
+          age40*nh40.num - death40*nh40.num - gamma*nh40.num
+        dR40  = age30*r30.num + gamma*h40.num + gamma*nh40.num - 
+          age40*r40.num - death40*r40.num - rho*r40.num
         
         # age 60 + years
-        force_inf_60  =      beta  /num *(M[7,1]*(i06.num + iv06.num) + 
-                                          M[7,2]*(i1.num  + iv1.num)  +  
-                                          M[7,3]*(i5.num  + iv5.num) + 
-                                          M[7,4]*(i10.num + iv10.num)+
-                                          M[7,5]*(i30.num + iv30.num)+
-                                          M[7,6]*(i40.num + iv40.num)+
-                                          M[7,7]*(i60.num + iv60.num))
+        force_inf_60  =      beta  /num *(M[7,1]*(nh06.num) + 
+                                          M[7,2]*(nh1.num)  +  
+                                          M[7,3]*(nh5.num) + 
+                                          M[7,4]*(nh10.num)+
+                                          M[7,5]*(nh30.num)+
+                                          M[7,6]*(nh40.num)+
+                                          M[7,7]*(nh60.num))
         
-        dIv60 = age40*iv40.num -gamma*iv60.num - death60*iv60.num
         dS60  = age40*s40.num + rho*r60.num - force_inf_60*s60.num - death60*s60.num 
-        dI60  = force_inf_60*s60.num + age40*i40.num -gamma*i60.num - death60*i60.num
-        dR60  = gamma*iv60.num + gamma*i60.num + age40*r40.num- rho*r60.num - death60*r60.num
+        dH60  = age40*h40.num + force_inf_60*s60.num*hosp60 - death60*h60.num -gamma*h60.num
+        dNH60 = age40*nh40.num + force_inf_60*s60.num*(1-hosp60) - 
+          death60*nh60.num - gamma*nh60.num
+        dR60  = age40*r40.num + gamma*h60.num + gamma*nh60.num - 
+          death60*r60.num - rho*r60.num
         
         # output
         list(c(
             # compartment
             dV06,
-            dIv06,
             dS06,
-            dI06,
+            dH06,
+            dNH06,
             dR06,
             
             dV1,
-            dIv1,
             dS1,
-            dI1,
+            dH1,
+            dNH1,
             dR1,
             
-            dIv5,
             dS5,
-            dI5,
+            dH5,
+            dNH5,
             dR5,
             
-            dIv10,
             dS10,
-            dI10,
+            dH10,
+            dNH10,
             dR10,
             
-            dIv30,
             dS30,
-            dI30,
+            dH30,
+            dNH30,
             dR30,
             
-            dIv40,
             dS40,
-            dI40,
+            dH40,
+            dNH40,
             dR40,
             
-            dIv60,
             dS60,
-            dI60,
+            dH60,
+            dNH60,
             dR60,
             
             # incidence
-            si.flow.06_vac  = force_inf_v06*v06.num,
-            si.flow.06      = force_inf_06*s06.num,
+      si.flow.06_hos     = force_inf_v06*v06.num*hosp06v + force_inf_06*s06.num*hosp06,
+      si.flow.06_non_hos = force_inf_v06*v06.num*(1-hosp06v) + force_inf_06*s06.num*(1-hosp06),
             
-            si.flow.1_vac  = force_inf_v1*v1.num,
-            si.flow.1      = force_inf_1*s1.num,
-            
-            si.flow.5      = force_inf_5*s5.num,
-            
-            si.flow.10      = force_inf_10*s10.num,
-            
-            si.flow.30      = force_inf_30*s30.num,
-            
-            si.flow.40      = force_inf_40*s40.num,
-            
-            si.flow.60      = force_inf_60*s60.num
+      si.flow.1_hos      = force_inf_v1*v1.num*hosp1v + force_inf_1*s1.num*hosp1,
+      si.flow.1_non_hos  = force_inf_v1*v1.num*(1-hosp1v) + force_inf_1*s1.num*(1-hosp1)
             ))
     })
 }
@@ -325,65 +356,37 @@ params=param.dcm(beta=beta_,
                  gamma=gamma_,
                  rho= rho_
 )
-init=init.dcm(v06.num =0, iv06.num =0, s06.num =US_pop_*0.6/100, i06.num =1, r06.num =0,
-              v1.num  =0, iv1.num  =0, s1.num  =US_pop_*0.6/100, i1.num  =1, r1.num  =0,
-                          iv5.num  =0, s5.num  =US_pop_*4.8/100, i5.num  =1, r5.num  =0,
-                          iv10.num =0, s10.num =US_pop_*18.9/100,i10.num =1, r10.num =0,
-                          iv30.num =0, s30.num =US_pop_*27.2/100,i30.num =1, r30.num =0,
-                          iv40.num =0, s40.num =US_pop_*25.2/100,i40.num =1, r40.num =0,
-                          iv60.num =0, s60.num =US_pop_*22.7/100,i60.num =1, r60.num =0,
+init=init.dcm(v06.num =0, s06.num =US_pop_*0.6/100, h06.num =0, nh06.num =1, r06.num =0,
+              v1.num  =0, s1.num  =US_pop_*0.6/100, h1.num  =0, nh1.num  =1, r1.num  =0,
+                          s5.num  =US_pop_*4.8/100, h5.num  =0, nh5.num  =1, r5.num  =0,
+                          s10.num =US_pop_*18.9/100,h10.num =0, nh10.num =1, r10.num =0,
+                          s30.num =US_pop_*27.2/100,h30.num =0, nh30.num =1, r30.num =0,
+                          s40.num =US_pop_*25.2/100,h40.num =0, nh40.num =1, r40.num =0,
+                          s60.num =US_pop_*22.7/100,h60.num =0, nh60.num =1, r60.num =0,
               
-              si.flow.06_vac = 0,
-              si.flow.06     = 0,
-              si.flow.1_vac  = 0,
-              si.flow.1      = 0,
-              si.flow.5      = 0,
-              si.flow.10     = 0,
-              si.flow.30     = 0,
-              si.flow.40     = 0,
-              si.flow.60     = 0
-              )
+              si.flow.06_hos=0,
+              si.flow.06_non_hos=0,
+              si.flow.1_hos=0,
+              si.flow.1_non_hos=0
+)
 control=control.dcm(nstep=365*3,new.mod=RSV)
 sim=dcm(params,init,control)
 
-sim=mutate_epi(sim,num = v06.num + s06.num + iv06.num + i06.num + r06.num +
-                         v1.num  + s1.num +  iv1.num +  i1.num +  r1.num  + 
-                         s5.num +  iv5.num +  i5.num +  r5.num  +
-                         s10.num +  iv10.num +  i10.num +  r10.num  +
-                         s30.num +  iv30.num +  i30.num +  r30.num  +
-                         s40.num +  iv40.num +  i40.num +  r40.num  +
-                         s60.num +  iv60.num +  i60.num +  r60.num)
-# hospitalization risk
-# potential mechanism is vaccine reduce the rate of hospitalization. Although vaccine effect ends at 1 year old, the hospitalization rate among those who are older than 1 year is smaller than younger. This expects that vaccine prevent a the overall hospitalization rate/hospitalization averted.
-hosp06  = 26.3/1000
-hosp1  =  11.3/1000
-hosp5  =  1.4/1000
-hosp06v = hosp06*(1-psi_)
-hosp1v =  hosp1*(1-psi_)
+sim=mutate_epi(sim,num=v06.num + s06.num + h06.num + nh06.num + r06.num +
+                        v1.num  + s1.num  +  h1.num +  nh1.num +  r1.num  + 
+                        s5.num  +  h5.num +  nh5.num +  r5.num  +
+                       s10.num +  h10.num +  nh10.num +  r10.num  +
+                       s30.num +  h30.num +  nh30.num +  r30.num  +
+                       s40.num +  h40.num +  nh40.num +  r40.num  +
+                       s60.num +  h60.num +  nh60.num +  r60.num)
 
-#hosp10  = ? we do not need this estimate
-#hosp30  = ? we do not need this estimate
-#hosp40  = ? we do not need this estimate
-#hosp60  = ? we do not need this estimate
+sim=mutate_epi(sim,incidence06 =si.flow.06_hos + si.flow.06_non_hos)
+sim=mutate_epi(sim,incidence1  =si.flow.1_hos + si.flow.1_non_hos)
+sim=mutate_epi(sim,incidence0_12months=incidence06 + incidence1)
 
-sim=mutate_epi(sim,incidence06 =si.flow.06_vac + si.flow.06)
-sim=mutate_epi(sim,incidence1  =si.flow.1_vac + si.flow.1)
-sim=mutate_epi(sim,incidence5  =si.flow.5)
-sim=mutate_epi(sim,incidence0_5years=incidence06+
-                                     incidence1+
-                                     incidence5)
-sim=mutate_epi(sim,incidence0_12months=incidence06+
-                                     incidence1)
 sim=mutate_epi(sim,
-              hosp_incidence06 = si.flow.06_vac*hosp06v + si.flow.06*hosp06, 
-              hosp_incidence1  = si.flow.1_vac*hosp1v + si.flow.1*hosp1,
-              hosp_incidence5  = si.flow.5 * hosp5)
-              #hosp_incidence10  = si.flow.10 * hosp10,
-              #hosp_incidence30  = si.flow.30 * hosp30,
-              #hosp_incidence40  = si.flow.40 * hosp40,
-              #hosp_incidence60  = si.flow.60 * hosp60))
-sim=mutate_epi(sim, hosp_incidence0_5years = hosp_incidence06 + hosp_incidence1 + hosp_incidence5
-)
+              hosp_incidence06 = si.flow.06_hos, 
+              hosp_incidence1  = si.flow.1_hos)
 sim=mutate_epi(sim, hosp_incidence0_12months = hosp_incidence06 + hosp_incidence1)
 
 df=data.frame(sim)
@@ -394,36 +397,28 @@ df %<>% mutate(Rn=R0_ * (s06.num+s1.num+s5.num+s10.num+s30.num+s40.num+s60.num)/
 # incidence
 c.incidence06=c()
 c.incidence1=c()
-c.incidence5=c()
-
 c.hosp06=c()
 c.hosp1=c()
-c.hosp5=c()
 
 timestep=365*3
 for (i in 1:timestep){
         c.incidence06[i]  = sum(df$incidence06[seq(1:i)])
         c.incidence1[i]   = sum(df$incidence1[seq(1:i)])
-        c.incidence5[i]   = sum(df$incidence5[seq(1:i)])
     
         c.hosp06[i]    =sum(df$hosp_incidence06[seq(1:i)])
         c.hosp1[i]     =sum(df$hosp_incidence1[seq(1:i)])
-        c.hosp5[i]     =sum(df$hosp_incidence5[seq(1:i)])
 }
+
 df %<>% mutate(cum_incidence06=c.incidence06)
 df %<>% mutate(cum_incidence1=c.incidence1)
-df %<>% mutate(cum_incidence5=c.incidence5)
-df %<>% mutate(cum_incidence0_5years= cum_incidence06+cum_incidence1 + cum_incidence5)
 df %<>% mutate(cum_incidence0_12months= cum_incidence06+cum_incidence1)
 df %<>% mutate(cum_hosp06    =c.hosp06)
 df %<>% mutate(cum_hosp1     =c.hosp1)
-df %<>% mutate(cum_hosp5     =c.hosp5)
-df %<>% mutate(cum_hosp0_5years =cum_hosp06 +cum_hosp1+cum_hosp5)
 df %<>% mutate(cum_hosp0_12months =cum_hosp06 +cum_hosp1)
 return(df)
 }
 
-averted=function(days){
+avert_summary=function(days){
     # case
     # 0-12 months
     # non vaccine
@@ -500,6 +495,7 @@ My_Theme = ggplot2::theme(
 ```
 
 # Results
+# primary objecthe
 ```{r}
 # prepare dataframe
 df1=estimates(omega_=0,psi_=0) 
@@ -520,7 +516,7 @@ df_com=rbind(df1,df2)
 df_com %>% ggplot(aes(x=time, y=Rn,color=as.factor(scenario)))+geom_line()+
     geom_hline(yintercept=1.0, color="red",linetype=2)+
     xlab("Days") + 
-    ylab("Net reproductive number")+
+    ylab("Net reproducthe number")+
     scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine"," 50% coverage+ 80% efficacy"))+
     My_Theme
 
@@ -583,7 +579,7 @@ df_com %>% ggplot(aes(x=time))+
 # Averted at a year later
 ```{r} 
 # averted(time)  input must be days
-averted(365)
+avert_summary(365)
 ```
 
 
@@ -608,13 +604,159 @@ df_com %>% ggplot(aes(x=time))+
 ```
 
 
+# secondary objective (contour plot)
+```{r}
+# function for averted
+# only interested in hospitalization 0-12 months
+avert_hosp=function(days,hosp_in_scenario){
+    # non vaccine
+    df=estimates(omega_=0,psi_=0) 
+    hosp_ref= df %>% filter(time==days) %>%
+    dplyr::select(cum_hosp0_12months)%>% pull()
+    # vaccine scenario
+    hosp_scenario=hosp_in_scenario
+    # averted
+    value=(hosp_ref - hosp_scenario)/hosp_ref
+    return(value)
+}
+```
 
 
+```{r}
+# simulation 
+omega=c(seq(0,1,0.2))
+psi=c(seq(0.5,1,0.2))
+setting=data.frame(expand.grid(omega,psi))
+
+avert_summary=data.frame()
+for (i in 1:nrow(setting)){
+  # parameter sampling
+  current_set=setting[i,]
+  current_omega=current_set[,1]
+  current_psi=current_set[,2]
+  
+  # simulation
+  df=estimates(omega_=current_omega,psi=current_psi)
+  hosp_cases= df %>% filter(time==365) %>%
+    dplyr::select(cum_hosp0_12months)%>% pull()
+  value=avert_hosp(365,hosp_cases)
+  
+  # summary
+  avert_summary[i,1]=current_omega
+  avert_summary[i,2]=current_psi
+  avert_summary[i,3]=value
+}
+names(avert_summary) = c("omega","psi","hospital_averted")
+```
 
 
+```{r}
+# contour plot
+fig=plot_ly(
+  x=avert_summary$omega,
+  y=avert_summary$psi,
+  z=matrix(c(avert_summary$hospital_averted),ncol=length(psi),nrow=length(omega),byrow=F),
+  type = "contour")
+fig
+```
 
 
+```{r}
+gg= ggplot(avert_summary,aes(x=omega,y=psi)) +
+  geom_raster(aes(fill=hospital_averted)) + 
+  geom_contour(aes(z=hospital_averted),colour="white",size=1,alpha=0.5,breaks = c(0.1,0.2,0.3))+
+ # metR::geom_text_contour(aes(z=hospital_averted),colour="white")+
+ # geom_label_contour(aes(z=hospital_averted),labels=c(0.1,0.2,0.3))+
+  geom_text(aes(x=0.4,y=0.8),label="0.1",colour="white")+
+  geom_text(aes(x=0.7,y=0.8),label="0.2",colour="white")+
+  geom_text(aes(x=0.9,y=0.8),label="0.3",colour="white")
+gg
+```
 
 
+# Supplemental
+# hospitalization rate
+```{r}
+# in 2012 rate/100,000
+# goldstein2018
+age=c("1","2","3","4","5","6","7","8","9","10","11","12-17","18-49","50-64","65-")
+hosp_count= c(6757,2801,1364,661,320,200,88,76,34,48,40,149,465,564,1174)
+rate_=c(311,128.4,61.4,29.2,14.1,8.9,3.9,3.4,1.5,2.1,1.7,1.1,0.6,1.7,5.3)
+df=data.frame(age,hosp_count,rate=rate_/100000)
+```
 
+```{r}
+# yearly
+df2 = data.frame()
+for (i in 1:61){
+    if (i <= 11){
+        df2[i,1]= df[i,1]
+        df2[i,2]= df[i,2]
+        df2[i,3]= df[i,3]
+        }
+    if (i ==12){
+        for (j in 12:17){
+            df2[j,1]= j
+            df2[j,2]= df[i,2]/6
+            df2[j,3]= df[i,3]/6
+        }
+    }
+    if (i == 13){
+        for (j in 18:49){
+            df2[j,1]= j
+            df2[j,2]= df[i,2]/32
+            df2[j,3]= df[i,3]/32
+        }
+    }
+    if (i == 14){
+        for (j in 50:65){
+            df2[j,1]= j
+            df2[j,2]= df[i,2]/15
+            df2[j,3]= df[i,3]/15
+        }
+    }
+    if (i == 15){
+        for (j in 65){
+            df2[j,1]= j
+            df2[j,2]= df[i,2]
+            df2[j,3]= df[i,3]
+        }
+    }
+}
+names(df2)=c("age","hosp_count","rate")
 
+df2 %<>% mutate(case_count=hosp_count/rate)
+
+# collapse
+df3 = data.frame()
+for (i in 1:7){
+    if (i==1) {
+        df3[i,1]= "1-4"
+        df3[i,2]= sum(df2[1:4,2])
+        df3[i,3]= sum(df2[1:4,4])
+    }
+    if (i==2) {
+        df3[i,1]= "5-19"
+        df3[i,2]= sum(df2[5:19,2])
+        df3[i,3]= sum(df2[5:19,4])
+    }
+    if (i==3) {
+        df3[i,1]= "20-39"
+        df3[i,2]= sum(df2[20:39,2])
+        df3[i,3]= sum(df2[20:39,4])
+    }
+    if (i==4) {
+        df3[i,1]= "40-59"
+        df3[i,2]= sum(df2[40:59,2])
+        df3[i,3]= sum(df2[40:59,4])
+    }
+    if (i==5) {
+        df3[i,1]= "60-"
+        df3[i,2]= sum(df2[60:nrow(df2),2])
+        df3[i,3]= sum(df2[60:nrow(df2),4])
+    }
+}
+names(df3) =c("age","hosp_count","case_count")
+
+df3 %<>% mutate(rate=hosp_count/case_count)
+```

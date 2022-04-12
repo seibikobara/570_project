@@ -20,9 +20,10 @@ Primary objective
   step 2: results (Rn, epi curve, averted)
   
 secondary objective
-  step 1: run functions
-  step 2: simulation (takes long)
-  step 3: visualize
+  (need to run step 1 and 2 above)
+  step 3: run functions
+  step 4: simulation (takes long)
+  step 5: visualize
   
 Supplements
   calculated hospitalization rate for each age category
@@ -32,6 +33,100 @@ Supplements
 # Primary objective
 # step1: Model function
 ```{r}
+# Hospitalization rate calculation
+# in 2012 rate/100,000 from goldstein2018
+age=c("<1","1","2","3","4","5","6","7","8","9","10","11","12-17","18-49","50-64","65-")
+hosp_count= c(28692,6757,2801,1364,661,320,200,88,76,34,48,40,149,465,564,1174)
+rate_=c(1334,311,128.4,61.4,29.2,14.1,8.9,3.9,3.4,1.5,2.1,1.7,1.1,0.6,1.7,5.3)
+data=data.frame(age,hosp_count,rate=rate_/100000)
+
+# yearly
+data2 = data.frame()
+for (i in 1:16){
+    if (i <= 12){
+        data2[i,1]= data[i,1]
+        data2[i,2]= data[i,2]
+        data2[i,3]= data[i,3]
+        }
+    else if (i ==13){
+        for (j in 13:18){
+            data2[j,1]= j-1
+            data2[j,2]= data[i,2]/6
+            data2[j,3]= data[i,3]/6
+        }
+    }
+    else if (i == 14){
+        for (j in 19:50){
+            data2[j,1]= j-1
+            data2[j,2]= data[i,2]/32
+            data2[j,3]= data[i,3]/32
+        }
+    }
+    else if (i == 15){
+        for (j in 51:65){
+            data2[j,1]= j-1
+            data2[j,2]= data[i,2]/15
+            data2[j,3]= data[i,3]/15
+        }
+    }
+    else if (i == 16){
+        for (j in 66){
+            data2[j,1]= "65-"
+            data2[j,2]= data[i,2]
+            data2[j,3]= data[i,3]
+        }
+    }
+}
+names(data2)=c("age","hosp_count","rate")
+
+data2 %<>% mutate(case_count=hosp_count/rate)
+
+# collapse to fit our age categories
+data3 = data.frame()
+for (i in 1:7){
+    if (i==1){
+        data3[i,1]= "0-5m"
+        data3[i,2]= data2[1,2]/2
+        data3[i,3]= data2[1,4]/2
+    } 
+    if (i==2){
+        data3[i,1]= "6-12m"
+        data3[i,2]= data2[1,2]/2
+        data3[i,3]= data2[1,4]/2
+    } 
+    if (i==3) {
+        data3[i,1]= "1-4"
+        data3[i,2]= sum(data2[2:5,2])
+        data3[i,3]= sum(data2[2:5,4])
+    }
+    if (i==4) {
+        data3[i,1]= "5-19"
+        data3[i,2]= sum(data2[6:20,2])
+        data3[i,3]= sum(data2[6:20,4])
+    }
+    if (i==5) {
+        data3[i,1]= "20-39"
+        data3[i,2]= sum(data2[21:40,2])
+        data3[i,3]= sum(data2[21:40,4])
+    }
+    if (i==6) {
+        data3[i,1]= "40-59"
+        data3[i,2]= sum(data2[41:60,2])
+        data3[i,3]= sum(data2[41:60,4])
+    }
+    if (i==7) {
+        data3[i,1]= "60-"
+        data3[i,2]= sum(data2[61:nrow(data2),2])
+        data3[i,3]= sum(data2[61:nrow(data2),4])
+    }
+}
+names(data3) =c("age","hosp_count","case_count")
+
+data3 %<>% mutate(rate=hosp_count/case_count)
+data3 %<>% mutate(case_non_hospitalized = case_count - hosp_count)
+demog = data3
+
+# function for a dynamic model
 estimates=function(omega_,psi_){
    
 # parameter settings
@@ -88,7 +183,7 @@ birthrate_ = 11/(1000*365)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# beta (coefficient of effecthe contact)
+# beta (coefficient of effec contact)
 
 eiganvalue=5.822557704881415
 # beta for non vaccinated
@@ -148,16 +243,16 @@ RSV = function(t,t0,params){
          # potential mechanism is vaccine reduce the rate of hospitalization. Although vaccine               effect ends at 1 year old, the hospitalization rate among those who are older than                1 year is smaller than younger. This expects that vaccine prevent a the overall                   hospitalization rate/hospitalization averted.
          # hosp 0 -12 months,1-4 years were derived from Shi2019, and 5-60+years were from                   Goldstein2018 (see supplemental, the bottom of this file)
         
-         hosp06  = 26.3/1000 
-         hosp1  =  11.3/1000
-         hosp5  =  1.4/1000
+         hosp06  = 26.3/1000 # shi2017
+         hosp1  =  11.3/1000 # shi2017
+         hosp5  =  1.4/1000  # shi2017
          hosp06v = hosp06*(1-psi_)
          hosp1v =  hosp1*(1-psi_)
 
-         hosp10  = 0.0000039021228
-         hosp30  = 0.0000001875000
-         hosp40  = 0.0000004710238
-         hosp60  = 0.0000072433980
+         hosp10  = demog[4,4] # goldstein2018
+         hosp30  = demog[5,4] # goldstein2018
+         hosp40  = demog[6,4] # goldstein2018
+         hosp60  = demog[7,4] # goldstein2018
         
         # birth rate
          mu=birthrate_
@@ -367,13 +462,28 @@ params=param.dcm(beta=beta_,
                  gamma=gamma_,
                  rho= rho_
 )
-init=init.dcm(v06.num =0, s06.num =US_pop_*0.6/100, h06.num =0, nh06.num =1, r06.num =0,
-              v1.num  =0, s1.num  =US_pop_*0.6/100, h1.num  =0, nh1.num  =1, r1.num  =0,
-                          s5.num  =US_pop_*4.8/100, h5.num  =0, nh5.num  =1, r5.num  =0,
-                          s10.num =US_pop_*18.9/100,h10.num =0, nh10.num =1, r10.num =0,
-                          s30.num =US_pop_*27.2/100,h30.num =0, nh30.num =1, r30.num =0,
-                          s40.num =US_pop_*25.2/100,h40.num =0, nh40.num =1, r40.num =0,
-                          s60.num =US_pop_*22.7/100,h60.num =0, nh60.num =1, r60.num =0,
+
+# RSV cases, hospitalization cases were adjusted to the US population. The original data captured RSV cases in the State Inpatients Databases of the Healthcare Cost and Utilization Project (HCUP), which is accounting for 54% of the US population. It is unfair to calculate the RSV cases in the US by 54% weight, but it is justified because there is no other resources that have report RSV cases across age groups in the US population.
+
+# In addition, the data from HCUP is annual cases and hospitalization. It is also unfair to divide 365 to obtain case at time 0. But, since there is no other sources that provide trend data telling the reasonable initial cases, it is justified to use these values.
+
+demog %<>% mutate(hosp_US_time0=hosp_count/0.54 /365)
+demog %<>% mutate(non_hosp_cases_US_time0=case_non_hospitalized/0.54/365)
+
+init=init.dcm(v06.num =0, s06.num =US_pop_*0.6/100, 
+                          h06.num =demog[1,6], nh06.num =demog[1,7], r06.num =0,
+              v1.num  =0, s1.num  =US_pop_*0.6/100, 
+                          h1.num  =demog[2,6], nh1.num  =demog[2,7], r1.num  =0,
+                          s5.num  =US_pop_*4.8/100, 
+                          h5.num  =demog[3,6], nh5.num  =demog[3,7], r5.num  =0,
+                          s10.num =US_pop_*18.9/100,
+                          h10.num =demog[4,6],  nh10.num =demog[4,7], r10.num =0,
+                          s30.num =US_pop_*27.2/100,
+                          h30.num =demog[5,6], nh30.num =demog[5,7], r30.num =0,
+                          s40.num =US_pop_*25.2/100,
+                          h40.num =demog[6,6], nh40.num =demog[6,7], r40.num =0,
+                          s60.num =US_pop_*22.7/100,
+                          h60.num =demog[7,6], nh60.num =demog[7,7], r60.num =0,
               
               si.flow.06_hos=0,
               si.flow.06_non_hos=0,
@@ -616,7 +726,7 @@ df_com %>% ggplot(aes(x=time))+
 
 
 # Secondary objective (contour plot)
-# Step 1: Function for averted
+# Step 3: Function for averted
 ```{r}
 # only interested in hospitalization 0-12 months
 avert_hosp=function(days,hosp_in_scenario){
@@ -632,7 +742,7 @@ avert_hosp=function(days,hosp_in_scenario){
 }
 ```
 
-# step2: simulation (takes long)
+# step 4: simulation (takes long)
 ```{r}
 # simulation 
 omega=c(seq(0,1,0.1))
@@ -661,7 +771,7 @@ names(avert_summary) = c("omega","psi","hospital_averted")
 ```
 
 
-# step 3: visualize
+# step 5: visualize
 ```{r}
 # contour plot
 ggplot(avert_summary,aes(x=omega,y=psi)) +
@@ -680,92 +790,3 @@ ggplot(avert_summary,aes(x=omega,y=psi)) +
 ```
 
 
-# Supplemental
-# hospitalization rate
-```{r}
-# in 2012 rate/100,000
-# goldstein2018
-age=c("1","2","3","4","5","6","7","8","9","10","11","12-17","18-49","50-64","65-")
-hosp_count= c(6757,2801,1364,661,320,200,88,76,34,48,40,149,465,564,1174)
-rate_=c(311,128.4,61.4,29.2,14.1,8.9,3.9,3.4,1.5,2.1,1.7,1.1,0.6,1.7,5.3)
-data=data.frame(age,hosp_count,rate=rate_/100000)
-```
-
-```{r}
-# yearly
-data2 = data.frame()
-for (i in 1:61){
-    if (i <= 11){
-        data2[i,1]= data[i,1]
-        data2[i,2]= data[i,2]
-        data2[i,3]= data[i,3]
-        }
-    if (i ==12){
-        for (j in 12:17){
-            data2[j,1]= j
-            data2[j,2]= data[i,2]/6
-            data2[j,3]= data[i,3]/6
-        }
-    }
-    if (i == 13){
-        for (j in 18:49){
-            data2[j,1]= j
-            data2[j,2]= data[i,2]/32
-            data2[j,3]= data[i,3]/32
-        }
-    }
-    if (i == 14){
-        for (j in 50:65){
-            data2[j,1]= j
-            data2[j,2]= data[i,2]/15
-            data2[j,3]= data[i,3]/15
-        }
-    }
-    if (i == 15){
-        for (j in 65){
-            data2[j,1]= j
-            data2[j,2]= data[i,2]
-            data2[j,3]= data[i,3]
-        }
-    }
-}
-names(data2)=c("age","hosp_count","rate")
-
-data2 %<>% mutate(case_count=hosp_count/rate)
-```
-
-
-```{r}
-# collapse
-data3 = data.frame()
-for (i in 1:7){
-    if (i==1) {
-        data3[i,1]= "1-4"
-        data3[i,2]= sum(data2[1:4,2])
-        data3[i,3]= sum(data2[1:4,4])
-    }
-    if (i==2) {
-        data3[i,1]= "5-19"
-        data3[i,2]= sum(data2[5:19,2])
-        data3[i,3]= sum(data2[5:19,4])
-    }
-    if (i==3) {
-        data3[i,1]= "20-39"
-        data3[i,2]= sum(data2[20:39,2])
-        data3[i,3]= sum(data2[20:39,4])
-    }
-    if (i==4) {
-        data3[i,1]= "40-59"
-        data3[i,2]= sum(data2[40:59,2])
-        data3[i,3]= sum(data2[40:59,4])
-    }
-    if (i==5) {
-        data3[i,1]= "60-"
-        data3[i,2]= sum(data2[60:nrow(data2),2])
-        data3[i,3]= sum(data2[60:nrow(data2),4])
-    }
-}
-names(data3) =c("age","hosp_count","case_count")
-
-data3 %<>% mutate(rate=hosp_count/case_count)
-```

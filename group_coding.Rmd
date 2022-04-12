@@ -644,34 +644,88 @@ df_com %>% ggplot(aes(x=time, y=Rn,color=as.factor(scenario)))+geom_line()+
 #dev.off()
 ```
 
-# Epidemiological curve of RSA
+# case total
 ```{r}
-#png(filename="epi_curve.png",
-#    units = "in",
-#    width = 7.5,
-#    height= 5,
-#    res=300)
+png(filename="fig_cases_total.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
 
 df_com %>% filter(scenario==1) %>%
     ggplot(aes(x=time))+
-    geom_line(aes(y=incidence0_12months,color="a",linetype="a"))+
-    geom_line(aes(y=incidence06, color="b",linetype="b"))+
-    geom_line(aes(y=incidence1, color="c",linetype="c"))+
-    scale_color_discrete(name="Age group",labels=c("Total incidence","0-5 months","6-12 months"))+
-    scale_linetype_discrete(name="Age group",labels=c("Total incidence","0-5 months","6-12 months"))+
+    geom_line(aes(y=incidence0_12months),col="gray20")+
     xlab("Days")+
     ylab("RSV incidence")+
     My_Theme
-#dev.off()
+dev.off()
+```
+```{r}
+png(filename="fig_cases_subcategory.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
+
+df_com %>% filter(scenario==1) %>%
+    ggplot(aes(x=time))+
+    geom_line(aes(y=incidence06, color="b",linetype="b"))+
+    geom_line(aes(y=incidence1, color="c",linetype="c"))+
+    scale_color_discrete(name="Age group",labels=c("0-5 months","6-12 months"))+
+    scale_linetype_discrete(name="Age group",labels=c("0-5 months","6-12 months"))+
+    xlab("Days")+
+    ylab("RSV incidence")+
+    My_Theme
+dev.off()
 ```
 
-# incidence and hospi from 0-12 months
+
+# hospi from 0-12 months
+
 ```{r}
-#png(filename="incidence0_12_plus_vaccine.png",
-#    units = "in",
-#    width = 7.5,
-#    height= 5,
-#    res=300)
+png(filename="fig_hosp_total.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
+
+df_com %>% filter(scenario==1) %>%
+    ggplot(aes(x=time))+
+    geom_line(aes(y=hosp_incidence0_12months),col="gray20")+
+    xlab("Days")+
+    ylab("RSV hospitalization")+
+    My_Theme
+dev.off()
+```
+
+
+```{r}
+png(filename="fig_hosp_subcategory.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
+
+df_com %>% filter(scenario==1) %>%
+    ggplot(aes(x=time))+
+    geom_line(aes(y=hosp_incidence06, color="b",linetype="b"))+
+    geom_line(aes(y=hosp_incidence1, color="c",linetype="c"))+
+    scale_color_discrete(name="Age group",labels=c("0-5 months","6-12 months"))+
+    scale_linetype_discrete(name="Age group",labels=c("0-5 months","6-12 months"))+
+    xlab("Days")+
+    ylab("RSV hospitalization")+
+    My_Theme
+dev.off()
+```
+
+# vaccine scenario
+# incidence vac total
+```{r}
+png(filename="fig_case_total_vac.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
 
 df_com %>% ggplot(aes(x=time))+
     geom_line(aes(y=incidence0_12months, color=as.factor(scenario)))+
@@ -679,23 +733,103 @@ df_com %>% ggplot(aes(x=time))+
     ylab("RSV incidence")+
     scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine"," 50% coverage+ 80% efficacy"))+
     My_Theme
-#dev.off()
+dev.off()
+```
 
-#png(filename="hospie0_12_plus_vaccine.png",
-#    units = "in",
-#    width = 7.5,
-#    height= 5,
-#    res=300)
+# incidence 0-5 months vaccine
+```{r}
+png(filename="fig_case_0_5_vac.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
+
+df_com %>% ggplot(aes(x=time))+
+    geom_line(aes(y=incidence06, color=as.factor(scenario),linetype=as.factor(scenario)))+
+    xlab("Days")+
+    ylab("RSV incidence")+
+    scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    My_Theme
+dev.off()
+```
+
+
+
+# incidence 6-12 months vaccine
+```{r}
+png(filename="fig_case_6-12_vac.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
+
+df_com %>% ggplot(aes(x=time))+
+    geom_line(aes(y=incidence1, color=as.factor(scenario),linetype=as.factor(scenario)))+
+    xlab("Days")+
+    ylab("RSV incidence")+
+    scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    My_Theme
+dev.off()
+```
+
+
+# hospital vac total
+```{r}
+png(filename="fig_hosp_total_vac.png",
+    units = "in",
+    width = 7,
+    height= 7,
+    res=300)
 
 df_com %>% ggplot(aes(x=time))+
     geom_line(aes(y=hosp_incidence0_12months, color=as.factor(scenario)))+
     xlab("Days")+
-    ylab("RSV hospitalization incidence")+
+    ylab("RSV hospitalization")+
     scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine"," 50% coverage+ 80% efficacy"))+
     My_Theme
-#dev.off()
-
+dev.off()
 ```
+
+# hosp 0-5 months vaccine
+```{r}
+png(filename="fig_hosp_0_5_vac.png",
+    units = "in",
+    width = 7,
+    height= 3,
+    res=300)
+
+df_com %>% ggplot(aes(x=time))+
+    geom_line(aes(y=hosp_incidence06,
+                  color=as.factor(scenario),linetype=as.factor(scenario)))+
+    xlab("Days")+
+    ylab("RSV hospitalization")+
+    scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    My_Theme
+dev.off()
+```
+
+# hosp 6-12 months vaccine
+```{r}
+png(filename="fig_hosp_6-12_vac.png",
+    units = "in",
+    width = 7,
+    height= 3,
+    res=300)
+
+df_com %>% ggplot(aes(x=time))+
+    geom_line(aes(y=hosp_incidence1,
+                  color=as.factor(scenario),linetype=as.factor(scenario)))+
+    xlab("Days")+
+    ylab("RSV incidence")+
+    scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
+    My_Theme
+dev.off()
+```
+
 
 # Averted at a year later
 ```{r} 
@@ -703,26 +837,6 @@ df_com %>% ggplot(aes(x=time))+
 avert_summary(365)
 ```
 
-
-# Incidence cases fro 0 to 12 months: non vaccine vs vaccine
-```{r}
-#png(filename="incidence_age_group_plus_vaccine.png",
-#    units = "in",
-#    width = 7.5,
-#    height= 5,
-#    res=300)
-
-df_com %>% ggplot(aes(x=time))+
-    geom_line(aes(y=incidence06, color="0-5", linetype=as.factor(scenario)))+
-    geom_line(aes(y=incidence1, color="6-12", linetype=as.factor(scenario)))+
-    xlab("Days")+
-    ylab("RSV incidence")+
-    scale_color_discrete(name="Age group",labels=c("0-5 months","6-12 months"))+
-    scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
-    My_Theme
-
-#dev.off()
-```
 
 
 # Secondary objective (contour plot)
@@ -773,6 +887,12 @@ names(avert_summary) = c("omega","psi","hospital_averted")
 
 # step 5: visualize
 ```{r}
+png(filename="fig_sensit.png",
+    units = "in",
+    width = 9,
+    height= 7,
+    res=300)
+
 # contour plot
 ggplot(avert_summary,aes(x=omega,y=psi)) +
   geom_raster(aes(fill=hospital_averted)) + 
@@ -787,6 +907,7 @@ ggplot(avert_summary,aes(x=omega,y=psi)) +
   geom_text(aes(x=1.0,y=1.03),label="0.7",colour="black") +
   xlab("Vaccine coverage")+
   ylab("Vaccine efficacy")
+dev.off()
 ```
 
 

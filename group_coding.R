@@ -1,9 +1,21 @@
----
-title: "group_project"
-output: html_document
----
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Group 2: RSV
+# Members: Krista Stenberg, Ally Dalby, Julia Spychalski, Seibi Kobara, and Aaron Holton
 
-```{r}
+# Readme
+# Codes for the primary objective
+# step 1: run functions
+# step 2: results (Rn, epi curve, averted)
+
+# Codes for the secondary objective
+# (need to run step 1 and 2 above)
+# step 3: run functions
+# step 4: simulation (takes long)
+# step 5: visualize
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+## -------------------------------------------------------------------------------
 # packages
 options(scipen = 999)
 library(EpiModel)
@@ -11,28 +23,12 @@ library(tidyverse)
 library(magrittr)
 library(gplots)
 library(egg)
-```
 
-```{r}
-knitr::purl("group_coding.Rmd")
-```
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Readme
-Primary objective
-  step 1: run functions
-  step 2: results (Rn, epi curve, averted)
-  
-secondary objective
-  (need to run step 1 and 2 above)
-  step 3: run functions
-  step 4: simulation (takes long)
-  step 5: visualize
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+#---------------------------------------------------------------------------------
 # Primary objective
-# step1: Model function
-```{r}
+# step1: functions
+## -------------------------------------------------------------------------------
 # Hospitalization rate calculation
 # in 2012 rate/100,000 from goldstein2018
 age=c("<1","1","2","3","4","5","6","7","8","9","10","11","12-17","18-49","50-64","65-")
@@ -613,21 +609,21 @@ My_Theme = ggplot2::theme(
   axis.text.x = element_text(size = 12),
   axis.title.y = element_text(size = 12),
   panel.background = element_rect(fill = "white", colour = "grey50"))
-```
 
-# Results 
-# step 2
-```{r}
+
+#---------------------------------------------------------------------------------
+# Primary objective
+# step2: functions
+## -------------------------------------------------------------------------------
 # prepare dataframe
 df1=estimates(omega_=0,psi_=0) 
 df1 %<>% mutate(scenario=1)
 df2=estimates(omega=0.5,psi=0.8) 
 df2 %<>% mutate(scenario=2)
 df_com=rbind(df1,df2)
-```
 
-# Rn
-```{r}
+
+## -------------------------------------------------------------------------------
 png(filename="fig_Rn.png",
     units = "in",
     width = 7.5,
@@ -643,39 +639,24 @@ df_com %>% filter(scenario ==1) %>%
     My_Theme
 
 dev.off()
-```
 
 
-```{r}
+## -------------------------------------------------------------------------------
 # range of rn
 df_com %>% filter(scenario ==1) %>% summarize(range(Rn))
 
 # convergence
 df_com %>% filter(scenario ==1) %>% filter(time==365*3) %>% pull(Rn)
-```
 
 
-
-# proportion of susceptible
-```{r}
+## -------------------------------------------------------------------------------
 df_com %>% filter(scenario==1) %>% 
   ggplot(aes(x=time)) +
   geom_line(aes(y=s06.num,color="s06")) + 
   geom_line(aes(y=s1.num,color="s1"))
-```
 
 
-
-
-
-
-
-
-
-
-
-# case total
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_cases_total.png",
     units = "in",
     width = 7,
@@ -689,10 +670,9 @@ df_com %>% filter(scenario==1) %>%
     ylab("RSV incidence")+
     My_Theme
 dev.off()
-```
 
-# case peak 0-12 months
-```{r}
+
+## -------------------------------------------------------------------------------
 # total peak 1st wave
 first=df_com %>% filter(scenario==1) %>% filter(time %in% seq(0,280)) %>% summarize(max=max(incidence0_12months))
 
@@ -703,11 +683,9 @@ second=df_com %>% filter(scenario==1) %>% filter(time %in% seq(280,450)) %>% sum
 third=df_com %>% filter(scenario==1) %>% filter(time %in% seq(450,650)) %>% summarize(max=max(incidence0_12months))
 
 print(paste("1st peak:",first,"2nd peak:",second,"3rd peak:",third))
-```
 
 
-# case peak 0-5 months
-```{r}
+## -------------------------------------------------------------------------------
 # total peak 1st wave
 first=df_com %>% filter(scenario==1) %>% filter(time %in% seq(0,280)) %>% summarize(max=max(incidence06))
 
@@ -718,9 +696,9 @@ second=df_com %>% filter(scenario==1) %>% filter(time %in% seq(280,450)) %>% sum
 third=df_com %>% filter(scenario==1) %>% filter(time %in% seq(450,650)) %>% summarize(max=max(incidence06))
 
 print(paste("1st peak:",first,"2nd peak:",second,"3rd peak:",third))
-```
-# case peak 6-12 months
-```{r}
+
+
+## -------------------------------------------------------------------------------
 # total peak 1st wave
 first=df_com %>% filter(scenario==1) %>% filter(time %in% seq(0,280)) %>% summarize(max=max(incidence1))
 
@@ -731,11 +709,9 @@ second=df_com %>% filter(scenario==1) %>% filter(time %in% seq(280,450)) %>% sum
 third=df_com %>% filter(scenario==1) %>% filter(time %in% seq(450,650)) %>% summarize(max=max(incidence1))
 
 print(paste("1st peak:",first,"2nd peak:",second,"3rd peak:",third))
-```
 
 
-
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_cases_subcategory.png",
     units = "in",
     width = 8,
@@ -752,10 +728,9 @@ df_com %>% filter(scenario==1) %>%
     ylab("RSV incidence")+
     My_Theme
 dev.off()
-```
 
-# incidence for the final report
-```{r}
+
+## -------------------------------------------------------------------------------
 png(filename="fig_cases_final_report.png",
     units = "in",
     width = 10,
@@ -772,13 +747,9 @@ df_com %>% filter(scenario==1) %>%
     ylab("RSV incidence")+
     My_Theme
 dev.off()
-```
 
 
-
-# hospi from 0-12 months
-
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_hosp_total.png",
     units = "in",
     width = 7,
@@ -792,10 +763,9 @@ df_com %>% filter(scenario==1) %>%
     ylab("RSV hospitalization")+
     My_Theme
 dev.off()
-```
 
 
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_hosp_subcategory.png",
     units = "in",
     width = 8,
@@ -812,11 +782,9 @@ df_com %>% filter(scenario==1) %>%
     ylab("RSV hospitalization")+
     My_Theme
 dev.off()
-```
 
 
-# hosp final report
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_hosp_final_report.png",
     units = "in",
     width = 10,
@@ -834,10 +802,9 @@ df_com %>% filter(scenario==1) %>%
     ylab("RSV hospitalization")+
     My_Theme
 dev.off()
-```
 
-# hosp peak 0-12 months
-```{r}
+
+## -------------------------------------------------------------------------------
 # total peak 1st wave
 first=df_com %>% filter(scenario==1) %>% filter(time %in% seq(0,280)) %>% summarize(max=max(hosp_incidence0_12months))
 
@@ -848,9 +815,9 @@ second=df_com %>% filter(scenario==1) %>% filter(time %in% seq(280,450)) %>% sum
 third=df_com %>% filter(scenario==1) %>% filter(time %in% seq(450,650)) %>% summarize(max=max(hosp_incidence0_12months))
 
 print(paste("1st peak:",first,"2nd peak:",second,"3rd peak:",third))
-```
-# hosp peak 0-5 months
-```{r}
+
+
+## -------------------------------------------------------------------------------
 # total peak 1st wave
 first=df_com %>% filter(scenario==1) %>% filter(time %in% seq(0,280)) %>% summarize(max=max(hosp_incidence06))
 
@@ -861,10 +828,9 @@ second=df_com %>% filter(scenario==1) %>% filter(time %in% seq(280,450)) %>% sum
 third=df_com %>% filter(scenario==1) %>% filter(time %in% seq(450,650)) %>% summarize(max=max(hosp_incidence06))
 
 print(paste("1st peak:",first,"2nd peak:",second,"3rd peak:",third))
-```
 
-# hosp peak 6-12 months
-```{r}
+
+## -------------------------------------------------------------------------------
 # total peak 1st wave
 first=df_com %>% filter(scenario==1) %>% filter(time %in% seq(0,280)) %>% summarize(max=max(hosp_incidence1))
 
@@ -875,16 +841,9 @@ second=df_com %>% filter(scenario==1) %>% filter(time %in% seq(280,450)) %>% sum
 third=df_com %>% filter(scenario==1) %>% filter(time %in% seq(450,650)) %>% summarize(max=max(hosp_incidence1))
 
 print(paste("1st peak:",first,"2nd peak:",second,"3rd peak:",third))
-```
 
 
-
-
-
-
-# vaccine scenario
-# incidence vac total
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_case_total_vac.png",
     units = "in",
     width = 7,
@@ -898,10 +857,9 @@ df_com %>% ggplot(aes(x=time))+
     scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine"," 50% coverage+ 80% efficacy"))+
     My_Theme
 dev.off()
-```
 
-# incidence 0-5 months vaccine
-```{r}
+
+## -------------------------------------------------------------------------------
 png(filename="fig_case_0_5_vac.png",
     units = "in",
     width = 7,
@@ -916,12 +874,9 @@ df_com %>% ggplot(aes(x=time))+
     scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
     My_Theme
 dev.off()
-```
 
 
-
-# incidence 6-12 months vaccine
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_case_6-12_vac.png",
     units = "in",
     width = 7,
@@ -936,11 +891,9 @@ df_com %>% ggplot(aes(x=time))+
     scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
     My_Theme
 dev.off()
-```
 
 
-# hospital vac total
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_hosp_total_vac.png",
     units = "in",
     width = 8,
@@ -954,10 +907,9 @@ df_com %>% ggplot(aes(x=time))+
     scale_color_discrete(name="Vaccine scenario",labels=c("No vaccine"," 50% coverage+ 80% efficacy"))+
     My_Theme
 dev.off()
-```
 
-# hosp 0-5 months vaccine
-```{r}
+
+## -------------------------------------------------------------------------------
 png(filename="fig_hosp_0_5_vac.png",
     units = "in",
     width = 8,
@@ -973,10 +925,9 @@ df_com %>% ggplot(aes(x=time))+
     scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
     My_Theme
 dev.off()
-```
 
-# hosp 6-12 months vaccine
-```{r}
+
+## -------------------------------------------------------------------------------
 png(filename="fig_hosp_6-12_vac.png",
     units = "in",
     width = 8,
@@ -992,23 +943,19 @@ df_com %>% ggplot(aes(x=time))+
     scale_linetype_discrete(name="Vaccine scenario",labels=c("No vaccine","50% coverage+ 80% efficacy"))+
     My_Theme
 dev.off()
-```
 
 
-
-# Averted at a year later
-```{r} 
+## -------------------------------------------------------------------------------
 # averted(time)  input must be days
 avert_summary(365)
 avert_summary(365*2)
 avert_summary(365*3)
-```
 
 
-
-# Secondary objective (contour plot)
-# Step 3: Function for averted
-```{r}
+#---------------------------------------------------------------------------------
+# Secondary objective
+# step3: functions
+## -------------------------------------------------------------------------------
 # only interested in hospitalization 0-12 months
 avert_hosp=function(days,hosp_in_scenario){
     # non vaccine
@@ -1021,10 +968,13 @@ avert_hosp=function(days,hosp_in_scenario){
     value=(hosp_ref - hosp_scenario)/hosp_ref
     return(value)
 }
-```
 
+
+#---------------------------------------------------------------------------------
+# Secondary objective
 # step 4: simulation (takes long)
-```{r}
+
+## -------------------------------------------------------------------------------
 # simulation 
 omega=c(seq(0,1,0.1))
 psi=c(seq(0.4,1,0.1))
@@ -1049,11 +999,12 @@ for (i in 1:nrow(setting)){
   avert_summary[i,3]=value
 }
 names(avert_summary) = c("omega","psi","hospital_averted")
-```
 
 
+#---------------------------------------------------------------------------------
+# Secondary objective
 # step 5: visualize
-```{r}
+## -------------------------------------------------------------------------------
 png(filename="fig_sensit.png",
     units = "in",
     width = 9,
@@ -1074,7 +1025,4 @@ ggplot(avert_summary,aes(x=omega,y=psi)) +
   xlab("Vaccine coverage")+
   ylab("Vaccine efficacy")
 dev.off()
-```
-
-
 
